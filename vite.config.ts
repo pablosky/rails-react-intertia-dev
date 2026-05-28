@@ -6,6 +6,16 @@ import { defineConfig } from "vite"
 import RubyPlugin from "vite-plugin-ruby"
 
 export default defineConfig(({ command }) => ({
+  server: {
+    host: "0.0.0.0",
+    hmr: {
+      host: "localhost",
+      port: 3036,
+    },
+    watch: {
+      usePolling: true,
+    },
+  },
   ssr: {
     // Prebuild ssr.js so we can drop node_modules from the container.
     noExternal: command === "build" ? true : undefined,

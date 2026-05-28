@@ -1,0 +1,88 @@
+# Switch to 'postgresql' in config/database.yml before running 'docker-compose up'
+# version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/myapp
+      - /myapp/node_modules
+      - react_app:/myapp/bundle
+    ports:
+      - "3000:3000"
+      - "3036:3036"
+      # Ports required for debugging
+      - "1234:1234"
+      - "26166:26168"
+    depends_on:
+      - postgres
+      - redis
+    links:
+      - postgres
+    command: bash -c "rm -f tmp/pids/server.pid && bundle && bundle exec rails s -p 3000 -b '0.0.0.0'"
+
+    env_file: .env
+    tty: true
+    stdin_open: true
+    deploy:
+      resources:
+        limits:
+          memory: 1512MB
+
+  sidekiq:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    links:
+      - postgres
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    volumes:
+      - .:/myapp
+      - /myapp/node_modules
+      - react_app:/myapp/bundle
+    env_file: .env
+    deploy:
+      resources:
+        limits:
+          memory: 512MB
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRESQL_PASSWORD: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRESQL_USER: postgres
+      POSTGRES_USER: postgres
+      POSTGRESQL_DB: zing_development
+      POSTGRES_DB: zing_development
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - react_app_pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 1512MB
+  redis:
+    image: 'redis'
+    command: redis-server
+    ports:
+      - '6379:6379'
+    volumes:
+      - react_app_redis_data:/var/lib/redis/data
+    deploy:
+      resources:
+        limits:
+          memory: 512MB
+
+volumes:
+  react_app_pg_data:
+  react_app_redis_data:
+  react_app:
+  assets:
